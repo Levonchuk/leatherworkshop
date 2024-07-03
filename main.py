@@ -22,122 +22,123 @@ catalog_menu.add(types.KeyboardButton('🔙 Назад'))
 
 # Описание товаров
 items = {
-    'Кожаные сумки': '\n 1 - шоппер\n 2 - поясная',
-    'Кошельки': '\n 1 - бифолд\n 2 - портмоне',
-    'Ремни': '\n 1 - брючный\n 2 - для джинс',
-    'Браслеты': '\n 1 - мужские\n 2 - женские'
+    'Кожаные сумки': {
+        'Шоппер': 'Описание: Высококачественная кожаная сумка для повседневной жизни.',
+        'Поясная сумка': 'Описание: Стильная и удобная кожаная сумка для прогулок и отдыха.'
+    },
+    'Кошельки': {
+        'Зиппер': 'Описание: Кожаный кошелек на молнии с множеством отделений.',
+        'Бифолд с монетницей': 'Описание: Компактный и стильный кожаный кошелек.'
+    },
+    'Ремни': {
+        'Брючный ремень': 'Описание: Прочный кожаный ремень с классической пряжкой.',
+        'Джинсовый ремень': 'Описание: Стильный кожаный ремень для повседневного использования.'
+    },
+    'Браслеты': {
+        'Мужской браслет': 'Описание: Кожаный брутальный браслет с металлическими вставками.',
+        'Женский браслет': 'Описание: Стильный кожаный браслет для модных образов.'
+    }
 }
 
 # Флаги для отслеживания текущего состояния
 is_ordering = False
 is_contacting_operator = False
+current_level = 'main'
+selected_item = None
+selected_subitem = None
 
 
 # Команда /start
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    global is_ordering, is_contacting_operator
+    global is_ordering, is_contacting_operator, current_level, selected_item, selected_subitem
     is_ordering = False
     is_contacting_operator = False
-    bot.send_message(
-        message.chat.id,
-        "Добро пожаловать в интернет-магазин изделий из кожи ручной работы!\nЧем могу помочь?",
-        reply_markup=main_menu
-    )
+    current_level = 'main'
+    selected_item = None
+    selected_subitem = None
+    bot.send_message(message.chat.id, "Добро пожаловать в наш магазин изделий из кожи!", reply_markup=main_menu)
 
 
-# Обработка кнопки "📜 Каталог"
-@bot.message_handler(func=lambda message: message.text == '📜 Каталог')
-def show_catalog(message):
-    global is_ordering, is_contacting_operator
-    is_ordering = False
-    is_contacting_operator = False
-    bot.send_message(
-        message.chat.id,
-        "Вот наш каталог товаров. Выберите категорию:",
-        reply_markup=catalog_menu
-    )
-
-
-# Обработка кнопок каталога
-@bot.message_handler(func=lambda message: message.text in items.keys())
-def show_item_description(message):
-    global is_ordering, is_contacting_operator
-    is_ordering = False
-    is_contacting_operator = False
-    item = message.text
-    description = items[item]
-    bot.send_message(
-        message.chat.id,
-        f'{item}\n\n{description}\n\nДля оформления заказа жмите "Назад" и "Оформить заказ"',
-        reply_markup=catalog_menu
-    )
-
-
-# Обработка кнопки "🔙 Назад"
-@bot.message_handler(func=lambda message: message.text == '🔙 Назад')
-def go_back(message):
-    global is_ordering, is_contacting_operator
-    is_ordering = False
-    is_contacting_operator = False
-    bot.send_message(
-        message.chat.id,
-        "Вы вернулись в главное меню.",
-        reply_markup=main_menu
-    )
-
-
-# Обработка кнопки "🛒 Оформить заказ"
-@bot.message_handler(func=lambda message: message.text == '🛒 Оформить заказ')
-def order_item(message):
-    global is_ordering, is_contacting_operator
-    is_ordering = True
-    is_contacting_operator = False
-    bot.send_message(
-        message.chat.id,
-        "Для оформления заказа напишите название товара, порядковый номер и количество.\nПример: Сумка 1 - 1 шт."
-    )
-
-
-# Обработка кнопки "📞 Связаться с оператором"
-@bot.message_handler(func=lambda message: message.text == '📞 Связаться с оператором')
-def contact_operator(message):
-    global is_ordering, is_contacting_operator
-    is_ordering = False
-    is_contacting_operator = True
-    bot.send_message(
-        message.chat.id,
-        "Наш оператор свяжется с вами в ближайшее время. Пожалуйста, оставьте свои контактные данные."
-    )
-
-
-# Обработка кнопки "❓ Помощь"
-@bot.message_handler(func=lambda message: message.text == '❓ Помощь')
-def help_user(message):
-    global is_ordering, is_contacting_operator
-    is_ordering = False
-    is_contacting_operator = False
-    bot.send_message(
-        message.chat.id,
-        "Узнать более подробную информацию можно на сайте leatherworkshop.com",
-        reply_markup=main_menu
-    )
-
-
-# Обработка сообщений в меню заказа и связи с оператором
+# Обработка текстовых сообщений
 @bot.message_handler(func=lambda message: True)
-def handle_messages(message):
-    global is_ordering, is_contacting_operator
-    if is_ordering or is_contacting_operator:
-        bot.send_message(
-            message.chat.id,
-            "Ваш запрос в обработке. Дождитесь ответа оператора для согласования заказа."
-        )
+def handle_message(message):
+    global is_ordering, is_contacting_operator, current_level, selected_item, selected_subitem
+
+    if message.text == '📜 Каталог':
+        current_level = 'catalog'
+        bot.send_message(message.chat.id, "Выберите категорию:", reply_markup=catalog_menu)
+        selected_item = None
+        selected_subitem = None
+
+    elif message.text in items and current_level == 'catalog':
+        selected_item = message.text
+        current_level = 'subitems'
+        subitems_menu = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        for subitem in items[selected_item]:
+            subitems_menu.add(types.KeyboardButton(subitem))
+        subitems_menu.add(types.KeyboardButton('🔙 Назад'))
+        bot.send_message(message.chat.id, f"Категория: {selected_item}. Выберите товар:", reply_markup=subitems_menu)
+
+    elif selected_item and message.text in items[selected_item] and current_level == 'subitems':
+        selected_subitem = message.text
+        current_level = 'item'
+        item_menu = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item_menu.add(types.KeyboardButton('🛒 Заказать'))
+        item_menu.add(types.KeyboardButton('🔙 Назад'))
+        bot.send_message(message.chat.id, items[selected_item][selected_subitem], reply_markup=item_menu)
+
+    elif message.text == '🛒 Заказать':
+        if selected_item and selected_subitem:
+            bot.send_message(message.chat.id, f"Заказ {selected_subitem} принят. Ждите звонка!", reply_markup=main_menu)
+            current_level = 'main'
+        else:
+            bot.send_message(message.chat.id, "Пожалуйста, выберите товар из каталога.")
+
+    elif message.text == '📞 Связаться с оператором':
+        is_contacting_operator = True
+        bot.send_message(message.chat.id, "Ваш запрос в обработке. Ждите звонка!", reply_markup=main_menu)
+        current_level = 'main'
+
+    elif message.text == '🛒 Оформить заказ':
+        is_ordering = True
+        bot.send_message(message.chat.id, "Пожалуйста, напишите, что хотите заказать.", reply_markup=main_menu)
+        current_level = 'main'
+
+    elif message.text == '❓ Помощь':
+        bot.send_message(message.chat.id, "Как мы можем вам помочь?", reply_markup=main_menu)
+
+    elif message.text == '🔙 Назад':
+        if current_level == 'item':
+            current_level = 'subitems'
+            subitems_menu = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            for subitem in items[selected_item]:
+                subitems_menu.add(types.KeyboardButton(subitem))
+            subitems_menu.add(types.KeyboardButton('🔙 Назад'))
+            bot.send_message(message.chat.id, "Вы вернулись к выбору товаров.", reply_markup=subitems_menu)
+        elif current_level == 'subitems':
+            current_level = 'catalog'
+            bot.send_message(message.chat.id, "Вы вернулись к выбору категорий.", reply_markup=catalog_menu)
+        elif current_level == 'catalog':
+            current_level = 'main'
+            bot.send_message(message.chat.id, "Вы вернулись в главное меню.", reply_markup=main_menu)
+        else:
+            bot.send_message(message.chat.id, "Вы уже в главном меню.", reply_markup=main_menu)
+            current_level = 'main'
+
     else:
-        bot.send_message(
-            message.chat.id,
-            "Неизвестная команда. Пожалуйста, используйте кнопки меню."
-        )
+        if is_ordering or is_contacting_operator:
+            bot.send_message(message.chat.id, "Ваш запрос в обработке. Ждите звонка!")
+        else:
+            bot.send_message(message.chat.id, "Неизвестная команда. Используйте кнопки меню.", reply_markup=main_menu)
 
 
-bot.polling()
+def save_order(order_details):
+    with open("orders.txt", "a") as file:
+        file.write(order_details + "\n")
+
+def notify_operator(order_details):
+    bot.send_message(OPERATOR_CHAT_ID, "Новый заказ:\n" + order_details)
+    
+
+bot.polling(none_stop=True)
