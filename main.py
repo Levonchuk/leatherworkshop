@@ -1,7 +1,7 @@
 import telebot
 from telebot import types
 
-API_TOKEN = "7250988138:AAFq8mJZWpHvR_C_k2Tkgq4XFmo2P6XfJ24"
+API_TOKEN = "YOUR_API_TOKEN"
 
 bot = telebot.TeleBot(API_TOKEN)
 
@@ -166,6 +166,13 @@ def handle_message(message):
         bot.send_message(
             message.chat.id,
             "Пожалуйста, напишите, что вы хотите заказать.",
+            reply_markup=main_menu
+        )
+
+    elif message.text == '❓ Помощь':
+        bot.send_message(
+            message.chat.id,
+            "Больше информации на сайте leatherworkshop.com.",
             reply_markup=main_menu
         )
 
